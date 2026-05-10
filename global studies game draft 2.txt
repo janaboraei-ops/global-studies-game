@@ -1,0 +1,548 @@
+import React, { useState, useEffect } from 'react';
+import { Heart, Battery, Brain, ArrowRight, RefreshCcw, User, MessageCircle, AlertCircle, Info, Utensils, Activity, Undo2, Phone, BookOpen } from 'lucide-react';
+
+const App = () => {
+  const [gameState, setGameState] = useState('start'); 
+  const [currentScenario, setCurrentScenario] = useState(0);
+  const [stats, setStats] = useState({
+    energy: 70,
+    mood: 60,
+    perception: 50
+  });
+  const [showInfo, setShowInfo] = useState(false);
+  const [currentInfo, setCurrentInfo] = useState({ behavior: '', fact: '', psychology: '', impact: {}, disorderFocus: '' });
+  const [history, setHistory] = useState([]);
+
+  const scenarios = [
+    {
+      id: "wakeup",
+      title: "07:00 AM - The Morning Check",
+      context: "The alarm goes off. Before my feet even hit the floor, I'm already mentally scanning my body. Everything feels heavy, but the mirror is waiting.",
+      options: [
+        {
+          text: "Step on the scale immediately to 'check the damage'",
+          impact: { energy: -5, mood: -20, perception: -20 },
+          thought: "I need to know the number before I decide if I'm allowed to eat today.",
+          behavior: "Rigid Weight Monitoring",
+          disorderFocus: "Anorexia Nervosa",
+          fact: "Anorexia has the highest mortality rate of any mental illness. The obsession with a 'number' is a hallmark of the cognitive distortions involved.",
+          psychology: "This behavior attempts to gain 'certainty' in an uncertain world, but it actually fuels a loss of self-trust."
+        },
+        {
+          text: "Avoid the scale but spend time 'body-checking' in the mirror",
+          impact: { energy: -5, mood: -10, perception: -15 },
+          thought: "I won't weigh myself, but let me see if my clothes feel looser than yesterday.",
+          behavior: "Visual Body Checking",
+          disorderFocus: "Body Dysmorphic Disorder",
+          fact: "Body checking is a 'safety behavior' that actually increases body dissatisfaction by focusing only on perceived flaws through a distorted lens.",
+          psychology: "This is a subtle form of control that keeps the mind fixated on appearance rather than how the body feels."
+        },
+        {
+          text: "Put on comfortable clothes and head to the kitchen",
+          impact: { energy: 5, mood: 10, perception: 15 },
+          thought: "I'm going to try to focus on what I need to do today instead of how I look.",
+          behavior: "Reduced Fixation",
+          disorderFocus: "Body Neutrality",
+          fact: "Choosing comfort over checking reduces morning cortisol levels, which helps stabilize mood throughout the day.",
+          psychology: "Choosing to ignore the mirror is an active exercise in valuing your function over your form."
+        }
+      ]
+    },
+    {
+      id: "breakfast",
+      title: "08:30 AM - The Kitchen Gate",
+      context: "My family is sitting around the table. The smell of fresh bread and foul is everywhere. My mother is already fixing a plate for me.",
+      options: [
+        {
+          text: "Say 'I already ate' or 'My stomach hurts'",
+          impact: { energy: -20, mood: -15, perception: -10 },
+          thought: "If I avoid the first meal, I can stay 'ahead' of my calorie goal for the day.",
+          behavior: "Active Avoidance",
+          disorderFocus: "Restrictive Eating",
+          fact: "Skipping meals triggers 'starvation mode,' where the body slows metabolism to preserve fat and begins breaking down muscle tissue for energy.",
+          psychology: "Deception creates a 'secret identity' which isolates you from the people who care about you most."
+        },
+        {
+          text: "Eat a few small bites and hide the rest",
+          impact: { energy: -10, mood: -5, perception: -10 },
+          thought: "I'll take just enough to keep them quiet, then I'll find a way to get rid of the rest.",
+          behavior: "Performative Eating",
+          fact: "Restricted intake leads to 'Brain Fog' because the brain uses 20% of the body's total daily energy from glucose.",
+          psychology: "This 'performance' allows the disorder to thrive while maintaining a facade of health."
+        },
+        {
+          text: "Eat a balanced portion and sit with the guilt",
+          impact: { energy: 15, mood: 5, perception: 10 },
+          thought: "This feels like a lot, but I know my brain needs fuel to get through school/work.",
+          behavior: "Nourishment Challenge",
+          disorderFocus: "Recovery Step",
+          fact: "Consistent breakfast consumption regulates blood sugar and helps lower the biological urge to binge later in the day.",
+          psychology: "Sitting with the discomfort of a full stomach is key to training the brain that food is not a threat."
+        }
+      ]
+    },
+    {
+      id: "work_school",
+      title: "11:00 AM - Focus & Fatigue",
+      context: "I'm in the middle of a task, but my brain feels like it's drifting. I keep looking at the clock, counting the hours until I can go home.",
+      options: [
+        {
+          text: "Drink black coffee to suppress the hunger and focus",
+          impact: { energy: -10, mood: -15, perception: -10 },
+          thought: "The caffeine will keep me going. Hunger is just a feeling I can ignore.",
+          behavior: "Chemical Suppression",
+          disorderFocus: "Appetite Blunting",
+          fact: "Caffeine on an empty stomach triggers excessive stomach acid and can cause heart palpitations, often mistaken for productivity.",
+          psychology: "Using substances to mask hunger is a way of 'silencing' the body's legitimate needs."
+        },
+        {
+          text: "Check my calorie-counting app for the tenth time",
+          impact: { energy: -5, mood: -20, perception: -20 },
+          thought: "I need to make sure I haven't messed up my math for the day.",
+          behavior: "Obsessive Tracking",
+          disorderFocus: "Orthorexia Nervosa",
+          fact: "Orthorexia is an obsession with 'healthy' eating and numbers that becomes so rigid it actually causes physical and social harm.",
+          psychology: "The app becomes a 'digital leash' that dictates your mood and sense of safety."
+        },
+        {
+          text: "Have a small snack and take a short walk",
+          impact: { energy: 10, mood: 15, perception: 15 },
+          thought: "If I'm tired, it might be because I'm actually hungry. I'll try to listen.",
+          behavior: "Intuitive Response",
+          disorderFocus: "Interoceptive Awareness",
+          fact: "Responding to hunger cues helps rebuild the neural pathways for 'satiety,' which are often damaged in long-term ED patients.",
+          psychology: "Responding to a physical signal with a physical solution builds a healthier body-mind connection."
+        }
+      ]
+    },
+    {
+      id: "lunch",
+      title: "01:30 PM - The Group Outing",
+      context: "Friends are going to a nearby restaurant. 'It's just one meal,' they say. I've already memorized the menu and I'm terrified.",
+      options: [
+        {
+          text: "Make an excuse to stay behind and work",
+          impact: { energy: -5, mood: -30, perception: -10 },
+          thought: "It's easier to stay here alone than to face the pressure of people watching me eat.",
+          behavior: "Social Isolation",
+          disorderFocus: "Avoidant Restrictive Food Intake Disorder (ARFID)",
+          fact: "Social isolation is one of the strongest predictors of relapse. EDs thrive when there is no social 'reality check.'",
+          psychology: "Avoidance provides short-term relief from anxiety but long-term growth of the disorder."
+        },
+        {
+          text: "Go, but order only a plain salad with no dressing",
+          impact: { energy: -10, mood: -10, perception: -15 },
+          thought: "I'll be there, but I won't lose control. I'll be the 'disciplined' one.",
+          behavior: "Selective Restriction",
+          disorderFocus: "Bulimia / Binge-Restrict Cycle",
+          fact: "Strict restriction of fats and carbs is usually what triggers a 'loss of control' binge later, as the brain searches for quick energy.",
+          psychology: "Labeling yourself as 'disciplined' for restricting is a way of moralizing a health crisis."
+        },
+        {
+          text: "Go and try a dish I used to enjoy",
+          impact: { energy: 15, mood: 20, perception: 15 },
+          thought: "I miss the fun. I'm going to try to focus on the conversation, not the plate.",
+          behavior: "Social Re-engagement",
+          disorderFocus: "Fear Food Exposure",
+          fact: "Exposure therapy (eating feared foods) is a gold-standard treatment for reducing the power of disordered thoughts.",
+          psychology: "Prioritizing connection over calories helps de-power the eating disorder's influence."
+        }
+      ]
+    },
+    {
+      id: "afternoon",
+      title: "04:00 PM - The Exercise Urge",
+      context: "I'm home and feeling restless. The 'voice' says I haven't done enough today. It's telling me I need to move until I'm exhausted.",
+      options: [
+        {
+          text: "Do an intense home workout until I feel dizzy",
+          impact: { energy: -30, mood: -10, perception: -20 },
+          thought: "I have to earn my dinner. If I don't burn it off, I don't deserve to eat.",
+          behavior: "Compulsive Exercise",
+          disorderFocus: "Anorexia Athletica",
+          fact: "Compulsive exercise is often a way to 'compensate' for food. It leads to stress fractures, low bone density, and hormonal shutdown.",
+          psychology: "Movement becomes a punishment rather than a pleasure, turning your body into an adversary."
+        },
+        {
+          text: "Go for a light walk 'just to clear my head'",
+          impact: { energy: -10, mood: 5, perception: -5 },
+          thought: "I'll just move a little. It's better than nothing, right?",
+          behavior: "Subtle Compulsion",
+          disorderFocus: "Activity Hiding",
+          fact: "Even 'light' movement can be problematic if the primary motivation is weight control rather than enjoyment or health.",
+          psychology: "This is a 'grey area' where the disorder hides behind the mask of 'being active.'"
+        },
+        {
+          text: "Read a book or do a puzzle while sitting down",
+          impact: { energy: 10, mood: 15, perception: 20 },
+          thought: "I am allowed to rest. My value isn't tied to how many calories I burn.",
+          behavior: "Rest Acceptance",
+          disorderFocus: "Self-Regulation",
+          fact: "Active rest allows the parasympathetic nervous system to take over, reducing the 'fight or flight' anxiety common in EDs.",
+          psychology: "Learning to be still is often the hardest and most productive part of recovery."
+        }
+      ]
+    },
+    {
+      id: "dinner",
+      title: "07:30 PM - The Main Event",
+      context: "Dinner is served. It's a traditional family meal. There's a lot of oil and rice. My heart starts to pound just looking at the serving dishes.",
+      options: [
+        {
+          text: "Take a full plate and 'purge' immediately after",
+          impact: { energy: -40, mood: -50, perception: -40 },
+          thought: "I'll eat it to make them happy, then I'll just undo it. It's the only way out.",
+          behavior: "Purging Cycle",
+          disorderFocus: "Bulimia Nervosa",
+          fact: "Purging causes dental erosion, esophageal tears, and severe electrolyte imbalances (like low potassium) that can cause cardiac arrest.",
+          psychology: "The purge is an attempt to 'reset' the world, but it leaves behind deep shame and physical trauma."
+        },
+        {
+          text: "Pick out the smallest pieces and eat very slowly",
+          impact: { energy: -10, mood: -15, perception: -10 },
+          thought: "I'll look busy. If I'm the last one finished, they'll think I ate a lot.",
+          behavior: "Avoidant Eating Patterns",
+          disorderFocus: "Restrictive Presentation",
+          fact: "Meticulous eating habits (like cutting food into tiny pieces) are common cognitive behaviors used to delay intake and increase anxiety.",
+          psychology: "Focusing on the mechanics of eating prevents you from enjoying the social aspect of the meal."
+        },
+        {
+          text: "Eat the meal and talk about my day",
+          impact: { energy: 20, mood: 20, perception: 15 },
+          thought: "It's just food. It's what keeps me alive. I'm going to enjoy my family's company.",
+          behavior: "Normalized Eating",
+          disorderFocus: "Recovery Challenge",
+          fact: "One meal cannot change your body's weight, but it can significantly change your brain's ability to think clearly.",
+          psychology: "Reframing food as a part of culture and family helps remove its 'scary' power."
+        }
+      ]
+    },
+    {
+      id: "midnight",
+      title: "11:30 PM - The Night Binge Urge",
+      context: "Everyone is asleep. I'm alone in the dark kitchen. My brain is screaming that I'm starving, and I feel like I'm losing control of my hands.",
+      options: [
+        {
+          text: "Eat a massive amount of food as quickly as possible",
+          impact: { energy: -20, mood: -40, perception: -30 },
+          thought: "I've been so 'good' all day, I can't take it anymore. I'll start over tomorrow.",
+          behavior: "Binge Eating",
+          disorderFocus: "Binge Eating Disorder (BED)",
+          fact: "Bingeing is often a biological response to restriction. It is NOT a lack of willpower, but the brain's survival mechanism for calorie deficit.",
+          psychology: "The binge provides a temporary 'numbing' from emotions, followed by intense guilt and physical pain."
+        },
+        {
+          text: "Stand in front of the fridge counting calories in my head",
+          impact: { energy: -10, mood: -20, perception: -20 },
+          thought: "I'm so hungry. If I eat one date, will it ruin everything? What about a slice of cheese?",
+          behavior: "Food Preoccupation",
+          disorderFocus: "Mental Bingeing",
+          fact: "Thinking about food constantly is a clinical sign of semi-starvation. The brain prioritizes food thoughts when fuel is low.",
+          psychology: "This mental loop is exhausting and prevents the brain from entering deep, restorative sleep."
+        },
+        {
+          text: "Drink a glass of water and go back to bed",
+          impact: { energy: 5, mood: 15, perception: 25 },
+          thought: "I'm feeling an urge, but I don't have to follow it. I'll eat a proper breakfast in the morning.",
+          behavior: "Urge Surfing",
+          disorderFocus: "CBT Skill",
+          fact: "Urges to binge usually peak at 20-30 minutes. If you can wait it out, the intensity of the 'voice' usually drops significantly.",
+          psychology: "You are learning that you can experience an uncomfortable urge without having to act on it."
+        }
+      ]
+    },
+    {
+      id: "help",
+      title: "01:00 AM - The Turning Point",
+      context: "I'm still awake. I'm scared. I realize I can't keep doing this alone. I look at my phone, wondering if it's finally time to reach out.",
+      options: [
+        {
+          text: "Tell myself 'I'm not sick enough' and ignore it",
+          impact: { energy: -10, mood: -20, perception: -10 },
+          thought: "There are people who are much thinner than me. I'm fine.",
+          behavior: "Denial",
+          disorderFocus: "Sick-Enough Myth",
+          fact: "Most people with eating disorders are not 'underweight.' Weight is not a reflection of the severity of the mental distress.",
+          psychology: "The 'not sick enough' thought is the disorder's way of protecting itself from being treated."
+        },
+        {
+          text: "Search for stories of others who recovered in Egypt",
+          impact: { energy: 5, mood: 15, perception: 20 },
+          thought: "Maybe there is a way out. Maybe I don't have to feel like this forever.",
+          behavior: "Hope Seeking",
+          disorderFocus: "Community Healing",
+          fact: "Connecting with peers who have recovered reduces the 'Shame Cycle' which is the engine that keeps eating disorders running.",
+          psychology: "Hope is the most powerful weapon against the isolation of an eating disorder."
+        },
+        {
+          text: "Save the hotline number and promise to call tomorrow",
+          impact: { energy: 10, mood: 40, perception: 50 },
+          thought: "I want my life back. I'm going to ask for help.",
+          behavior: "Action-Oriented Seeking",
+          disorderFocus: "Clinical Intervention",
+          fact: "Psychotherapy and nutritional rehabilitation are effective treatments that can lead to full, long-term recovery.",
+          psychology: "Reaching out for help is not a sign of weakness—it is the ultimate sign of strength."
+        }
+      ]
+    }
+  ];
+
+  const handleOption = (option) => {
+    setCurrentInfo({
+      ...option,
+      impact: option.impact,
+      previousStats: { ...stats }
+    });
+    setShowInfo(true);
+  };
+
+  const confirmChoice = () => {
+    setStats(prev => ({
+      energy: Math.max(0, Math.min(100, prev.energy + currentInfo.impact.energy)),
+      mood: Math.max(0, Math.min(100, prev.mood + currentInfo.impact.mood)),
+      perception: Math.max(0, Math.min(100, prev.perception + currentInfo.impact.perception))
+    }));
+    
+    setHistory([...history, { 
+      scenario: scenarios[currentScenario].title, 
+      choice: currentInfo.text, 
+      thought: currentInfo.thought,
+      behavior: currentInfo.behavior
+    }]);
+
+    setShowInfo(false);
+    if (currentScenario < scenarios.length - 1) {
+      setCurrentScenario(prev => prev + 1);
+    } else {
+      setGameState('ending');
+    }
+  };
+
+  const goBack = () => {
+    setShowInfo(false);
+  };
+
+  const restart = () => {
+    setStats({ energy: 70, mood: 60, perception: 50 });
+    setCurrentScenario(0);
+    setGameState('start');
+    setHistory([]);
+    setShowInfo(false);
+  };
+
+  const getEnding = () => {
+    if (stats.energy < 25) return {
+      title: "Physical Exhaustion",
+      text: "Your body has reached its limit. The dizziness and palpitations are your heart's way of shouting for help. Recovery isn't just about food—it's about staying alive. Please reach out to someone today.",
+      color: "bg-red-50 border-red-200 text-red-900"
+    };
+    if (stats.perception > 75) return {
+      title: "The Seeds of Recovery",
+      text: "You chose to listen to your healthy self many times today. It was painful and scary, but you are proving that you are more than a number. You are beginning to break the mirror's hold on your life.",
+      color: "bg-green-50 border-green-200 text-green-900"
+    };
+    return {
+      title: "Caught in the Middle",
+      text: "The day is over, but the struggle continues. You are existing in the shadows, hiding your pain behind secrets. You are tired of the battle, but there is hope. You don't have to carry this alone.",
+      color: "bg-amber-50 border-amber-200 text-amber-900"
+    };
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4 font-sans leading-relaxed text-neutral-900">
+      <div className="max-w-3xl w-full bg-white rounded-[2rem] shadow-xl overflow-hidden border border-neutral-200">
+        
+        {/* Stats Header */}
+        {gameState !== 'start' && (
+          <div className="bg-neutral-900 p-6 text-white grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-white/5">
+            <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-1.5">
+                  <Battery className={`w-3.5 h-3.5 ${stats.energy < 30 ? 'text-rose-500 animate-pulse' : 'text-emerald-400'}`} /> Energy
+                </span>
+                <span className="text-xs font-mono font-bold">{stats.energy}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className={`h-full transition-all duration-1000 ${stats.energy < 30 ? 'bg-rose-500' : 'bg-emerald-400'}`} style={{ width: `${stats.energy}%` }}></div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-rose-400" /> Mood
+                </span>
+                <span className="text-xs font-mono font-bold">{stats.mood}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-rose-400 transition-all duration-1000" style={{ width: `${stats.mood}%` }}></div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-1.5">
+                  <Brain className="w-3.5 h-3.5 text-sky-400" /> Mindset
+                </span>
+                <span className="text-xs font-mono font-bold">{stats.perception}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-sky-400 transition-all duration-1000" style={{ width: `${stats.perception}%` }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="p-8 md:p-12">
+          {gameState === 'start' && (
+            <div className="max-w-lg mx-auto text-center py-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-neutral-900 text-white rounded-full mb-8">
+                <User className="w-10 h-10" />
+              </div>
+              <h1 className="text-5xl font-black mb-4 tracking-tighter text-neutral-900 uppercase italic">Mirror Within</h1>
+              <p className="text-xl text-neutral-600 mb-10 font-medium leading-relaxed">
+                Explore the hidden patterns of eating disorders. Navigate a full day of choices and understand the clinical reality behind the voice in your head.
+              </p>
+              <button 
+                onClick={() => setGameState('playing')}
+                className="w-full bg-neutral-900 text-white px-8 py-5 rounded-2xl font-bold hover:bg-neutral-800 transition-all flex items-center justify-center gap-3 active:scale-[0.98] text-xl"
+              >
+                Start the Day <ArrowRight className="w-6 h-6" />
+              </button>
+              <p className="mt-8 text-neutral-400 text-sm flex items-center justify-center gap-2">
+                <Phone className="w-4 h-4" /> Egypt Mental Health Hotline: 16328
+              </p>
+            </div>
+          )}
+
+          {gameState === 'playing' && (
+            <div className="w-full">
+              {!showInfo ? (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center gap-3 mb-8">
+                    <span className="bg-neutral-100 text-neutral-600 px-3 py-1 rounded-lg text-[10px] font-black tracking-widest uppercase">
+                      Part {currentScenario + 1} of {scenarios.length}
+                    </span>
+                    <div className="h-px flex-1 bg-neutral-100"></div>
+                  </div>
+                  
+                  <h2 className="text-3xl font-black mb-6 text-neutral-900">{scenarios[currentScenario].title}</h2>
+                  
+                  <div className="bg-neutral-50 p-8 rounded-[1.5rem] border border-neutral-100 mb-10">
+                    <p className="text-2xl text-neutral-800 font-serif italic text-center md:text-left leading-snug">
+                      "{scenarios[currentScenario].context}"
+                    </p>
+                  </div>
+                  
+                  <div className="grid gap-3">
+                    {scenarios[currentScenario].options.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleOption(opt)}
+                        className="text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all flex justify-between items-center group active:scale-[0.99]"
+                      >
+                        <span className="font-bold text-lg text-neutral-800 pr-4">{opt.text}</span>
+                        <ArrowRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-900 transition-colors shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="animate-in fade-in zoom-in-[0.98] duration-300">
+                  <div className="bg-white border border-neutral-200 rounded-[1.5rem] overflow-hidden">
+                    <div className="bg-neutral-900 p-4 text-white flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Info className="w-4 h-4 text-sky-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Clinical Insight</span>
+                      </div>
+                      <span className="text-[10px] font-bold bg-white/20 px-3 py-1 rounded-full uppercase tracking-tighter">
+                        Focus: {currentInfo.disorderFocus}
+                      </span>
+                    </div>
+                    
+                    <div className="p-8 space-y-8">
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Internal Monologue</h4>
+                        <p className="text-xl font-serif italic text-neutral-800 leading-relaxed">
+                          "{currentInfo.thought}"
+                        </p>
+                      </div>
+
+                      <div className="h-px bg-neutral-100"></div>
+
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                            <Activity className="w-3 h-3" /> Disorder Fact
+                          </h4>
+                          <p className="text-neutral-600 font-medium text-sm leading-relaxed">
+                            {currentInfo.fact}
+                          </p>
+                        </div>
+                        <div className="space-y-3">
+                          <h4 className="text-[10px] font-black text-sky-600 uppercase tracking-widest flex items-center gap-2">
+                            <Brain className="w-3 h-3" /> Psychology
+                          </h4>
+                          <p className="text-neutral-600 font-medium text-sm leading-relaxed">
+                            {currentInfo.psychology}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col md:flex-row gap-4 mt-8">
+                    <button 
+                      onClick={goBack}
+                      className="flex-1 bg-neutral-100 text-neutral-600 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all active:scale-[0.98]"
+                    >
+                      <Undo2 className="w-4 h-4" /> Pick another
+                    </button>
+                    <button 
+                      onClick={confirmChoice}
+                      className="flex-[2] bg-neutral-900 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all active:scale-[0.98] shadow-lg"
+                    >
+                      Continue <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {gameState === 'ending' && (
+            <div className="animate-in fade-in duration-700 text-center">
+              <h2 className="text-4xl font-black mb-8 tracking-tighter uppercase italic">Midnight Summary</h2>
+              
+              <div className={`p-10 rounded-[2rem] border-2 mb-10 text-left ${getEnding().color}`}>
+                <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">{getEnding().title}</h3>
+                <p className="leading-relaxed text-lg font-medium opacity-90">
+                  {getEnding().text}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-4 max-w-sm mx-auto">
+                <button 
+                  onClick={restart}
+                  className="w-full bg-neutral-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-[0.98]"
+                >
+                  <RefreshCcw className="w-5 h-5" /> Restart
+                </button>
+                <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 text-blue-900">
+                  <h4 className="font-black text-sm uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
+                    <Phone className="w-4 h-4" /> Egypt Mental Health Support
+                  </h4>
+                  <p className="text-xs font-bold mb-4">Secretariat of Mental Health & Addiction Treatment</p>
+                  <div className="text-3xl font-black tracking-tighter mb-4 italic underline">16328</div>
+                  <p className="text-[10px] font-bold opacity-75">Toll-free 24/7 hotline across Egypt.</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
