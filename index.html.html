@@ -1,0 +1,362 @@
+import React, { useState, useEffect } from 'react';
+import { Heart, Battery, Brain, ArrowRight, RefreshCcw, User, MessageCircle, AlertCircle, Info } from 'lucide-react';
+
+const App = () => {
+  const [gameState, setGameState] = useState('start'); // start, playing, ending
+  const [currentScenario, setCurrentScenario] = useState(0);
+  const [stats, setStats] = useState({
+    energy: 50,
+    mood: 50,
+    perception: 50
+  });
+  const [showInfo, setShowInfo] = useState(false);
+  const [currentInfo, setCurrentInfo] = useState('');
+  const [history, setHistory] = useState([]);
+
+  const scenarios = [
+    {
+      id: "mirror",
+      title: "The Mirror",
+      context: "Lina stares at her reflection, pulling at her shirt. 'You look bigger today,' a voice whispers. She's already late for school.",
+      image: "🪞",
+      options: [
+        {
+          text: "Skip breakfast and rush out",
+          impact: { energy: -20, mood: 10, perception: -10 },
+          thought: "Thoughts: Saved 100 calories. Maybe my family won't notice.",
+          info: "Why breakfast matters: Skipping breakfast can lead to drops in blood sugar, increased cortisol (stress), and lower cognitive function. It often triggers a cycle of deprivation that leads to bingeing later."
+        },
+        {
+          text: "Force a black coffee and an apple",
+          impact: { energy: -10, mood: -10, perception: -15 },
+          thought: "Thoughts: 104 calories. I'll have to walk 5 miles to burn this off.",
+          info: "Rigid calorie counting is a hallmark of disordered eating. An apple and coffee lack the necessary proteins and fats to sustain brain health and emotional regulation throughout a school day."
+        },
+        {
+          text: "Pause and tell her mom she's not okay",
+          impact: { energy: 10, mood: 20, perception: 15 },
+          thought: "Thoughts: This is stressful, but maybe a different perspective will help.",
+          info: "Social support is a primary protective factor. Sharing feelings early can disrupt the 'internal monologue' of an eating disorder, providing a reality check against distorted self-perception."
+        }
+      ]
+    },
+    {
+      id: "cafeteria",
+      title: "The Cafeteria",
+      context: "Laughter fills the table, but Lina feels miles away. 'They're all eating normally... why can't you?'",
+      image: "🍱",
+      options: [
+        {
+          text: "Say she already ate",
+          impact: { energy: -15, mood: -20, perception: -20 },
+          thought: "Thoughts: Calculating their calories is exhausting. I'm too tired to laugh.",
+          info: "Survival Mode: When the body is starved, the brain enters a state of 'food noise'—obsessive thoughts about food and calories—making social connection nearly impossible."
+        },
+        {
+          text: "Eat slowly while comparing",
+          impact: { energy: 5, mood: -15, perception: -25 },
+          thought: "Thoughts: Go for the lowest calorie option. Don't let them see you're struggling.",
+          info: "Signs of struggle: Picking at food, cutting things into tiny pieces, or excessive water drinking are common signs. If you see this in a friend, offer support without focusing solely on the plate."
+        },
+        {
+          text: "Open up to a friend",
+          impact: { energy: 0, mood: 15, perception: 20 },
+          thought: "Thoughts: Scared, but it feels slightly better to have it off my chest.",
+          info: "Supporting a friend: If someone opens up, listen without judgment. Avoid giving 'diet advice.' Instead, validate their feelings and encourage them to seek professional support."
+        }
+      ]
+    },
+    {
+      id: "scroll",
+      title: "The Scroll",
+      context: "In bed, the screen glows. 'What I eat in a day' videos and fitness models fill the feed. 'If you tried harder, you could look like that.'",
+      image: "📱",
+      options: [
+        {
+          text: "Keep scrolling and save for 'thinspo'",
+          impact: { energy: -10, mood: -25, perception: -30 },
+          thought: "Thoughts: Save these to copy. I need to be better.",
+          info: "Social Media Algorithms: Content that focuses on extreme thinness or restrictive eating can trap users in 'echo chambers,' amplifying disordered thoughts and normalizing harmful behaviors."
+        },
+        {
+          text: "Close the app and plan tomorrow",
+          impact: { energy: -5, mood: -10, perception: -10 },
+          thought: "Thoughts: I feel hopeless. Tomorrow needs to be stricter.",
+          info: "The 'Restart' Trap: Planning to be 'perfect' tomorrow is a coping mechanism for the stress of today, but it often leads to further restriction and eventual burnout."
+        },
+        {
+          text: "Look up recovery content",
+          impact: { energy: 0, mood: 10, perception: 25 },
+          thought: "Thoughts: I don't trust it yet, but my brain knows this is right.",
+          info: "Curating your feed to include Body Neutrality or Recovery accounts can help retrain the brain to see value beyond appearance."
+        }
+      ]
+    },
+    {
+      id: "breaking",
+      title: "The Breaking Point",
+      context: "Home alone. The kitchen feels loud in the silence. The pressure has built up all day.",
+      image: "🏚️",
+      options: [
+        {
+          text: "Eat everything in sight quickly",
+          impact: { energy: -10, mood: -40, perception: -30 },
+          thought: "Thoughts: I'll start fresh tomorrow. I hate myself for this.",
+          info: "Binge Eating Disorder (BED): Often involves eating large quantities rapidly to cope with emotional distress. It is not a 'lack of willpower' but a complex psychological response to restriction or trauma."
+        },
+        {
+          text: "Walk away and distract herself",
+          impact: { energy: -20, mood: -10, perception: 10 },
+          thought: "Thoughts: 'Nothing tastes as good as skinny feels.' Stay strong.",
+          info: "Pro-Ana Content: Mantras like 'Skip dinner, wake up thinner' are dangerous cognitive distortions promoted by harmful online communities that treat a mental illness as a lifestyle choice."
+        },
+        {
+          text: "Call someone for help",
+          impact: { energy: 5, mood: 20, perception: 20 },
+          thought: "Thoughts: It's not just my thoughts anymore. It's a conversation.",
+          info: "Reaching out: Breaking the silence is the most powerful way to reclaim control from an eating disorder. It shifts the power from the 'voice' in your head to a real human connection."
+        }
+      ]
+    },
+    {
+      id: "turning",
+      title: "The Turning Point",
+      context: "Lina sits on her bed, overwhelmed. 'You can't keep doing this.'",
+      image: "🌅",
+      options: [
+        {
+          text: "Tell a friend everything",
+          impact: { energy: 10, mood: 20, perception: 20 },
+          thought: "Thoughts: I'm ready to try a different way.",
+          info: "Recovery is possible: Speaking up is the first step. Friends can help by accompanying you to appointments or simply being a safe space for meals."
+        },
+        {
+          text: "Keep everything inside",
+          impact: { energy: -30, mood: -30, perception: -30 },
+          thought: "Thoughts: I'm not ready. I can handle this alone.",
+          info: "The Risks: Eating disorders have some of the highest mortality rates of any mental illness due to physical complications and suicide. Silence allows the illness to grow."
+        },
+        {
+          text: "Ask for professional help",
+          impact: { energy: 20, mood: 30, perception: 30 },
+          thought: "Thoughts: I need a team. I can't do this by myself.",
+          info: "Professional Support: Success rates increase significantly with a multidisciplinary team (therapist, dietitian, and doctor). You deserve specialized care."
+        }
+      ]
+    }
+  ];
+
+  const handleOption = (option) => {
+    setStats(prev => ({
+      energy: Math.max(0, Math.min(100, prev.energy + option.impact.energy)),
+      mood: Math.max(0, Math.min(100, prev.mood + option.impact.mood)),
+      perception: Math.max(0, Math.min(100, prev.perception + option.impact.perception))
+    }));
+    
+    setHistory([...history, { scenario: scenarios[currentScenario].title, choice: option.text, thought: option.thought }]);
+    setCurrentInfo(option.info);
+    setShowInfo(true);
+  };
+
+  const nextScenario = () => {
+    setShowInfo(false);
+    if (currentScenario < scenarios.length - 1) {
+      setCurrentScenario(currentScenario + 1);
+    } else {
+      setGameState('ending');
+    }
+  };
+
+  const getEnding = () => {
+    const total = stats.energy + stats.mood + stats.perception;
+    if (total > 180) return {
+      title: "Recovery Ending",
+      text: "Lina begins to open up and seek help. The road isn't easy, but for the first time, she sees a version of herself that isn't defined by a number. She's learning to listen to her body again.",
+      color: "bg-green-100 border-green-500 text-green-800"
+    };
+    if (total > 100) return {
+      title: "Loop Ending",
+      text: "Lina continues the cycle. Some days are better than others, but the 'voice' still has a seat at her table. She feels stuck, waiting for a sign that it's okay to let go.",
+      color: "bg-yellow-100 border-yellow-500 text-yellow-800"
+    };
+    return {
+      title: "Crisis Ending",
+      text: "Lina's physical and mental health decline. The isolation has become a wall she can't see over. This is a critical moment where intervention from others becomes life-saving.",
+      color: "bg-red-100 border-red-500 text-red-800"
+    };
+  };
+
+  const restart = () => {
+    setStats({ energy: 50, mood: 50, perception: 50 });
+    setCurrentScenario(0);
+    setGameState('start');
+    setHistory([]);
+    setShowInfo(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-900">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        
+        {/* Header / Stats */}
+        {gameState !== 'start' && (
+          <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <div className="flex items-center gap-2">
+                <Battery className="w-4 h-4 text-emerald-400" />
+                <div className="h-2 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-400 transition-all duration-500" style={{ width: `${stats.energy}%` }}></div>
+                </div>
+                <span className="text-xs font-mono">{stats.energy}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-rose-400" />
+                <div className="h-2 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-rose-400 transition-all duration-500" style={{ width: `${stats.mood}%` }}></div>
+                </div>
+                <span className="text-xs font-mono">{stats.mood}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-sky-400" />
+                <div className="h-2 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-sky-400 transition-all duration-500" style={{ width: `${stats.perception}%` }}></div>
+                </div>
+                <span className="text-xs font-mono">{stats.perception}%</span>
+              </div>
+            </div>
+            <div className="hidden sm:block text-right">
+              <h2 className="text-xl font-bold italic tracking-tight">Mirror Within</h2>
+              <p className="text-xs text-slate-400">Decision-Making Prototype</p>
+            </div>
+          </div>
+        )}
+
+        <div className="p-8">
+          {gameState === 'start' && (
+            <div className="text-center py-10">
+              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <User className="w-12 h-12 text-slate-400" />
+              </div>
+              <h1 className="text-4xl font-extrabold mb-4 text-slate-900">Mirror Within</h1>
+              <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                Step into the shoes of Lina, a 17-year-old student. 
+                Experience the weight of small decisions and the 
+                complex reality of living with an eating disorder.
+              </p>
+              <button 
+                onClick={() => setGameState('playing')}
+                className="bg-slate-900 text-white px-8 py-4 rounded-full font-bold hover:bg-slate-800 transition-colors flex items-center gap-2 mx-auto"
+              >
+                Start Lina's Day <ArrowRight className="w-5 h-5" />
+              </button>
+              <p className="mt-8 text-xs text-slate-400 uppercase tracking-widest font-semibold">By Jana Boraei</p>
+            </div>
+          )}
+
+          {gameState === 'playing' && (
+            <div>
+              {!showInfo ? (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+                      Scenario {currentScenario + 1} of {scenarios.length}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-bold mb-4">{scenarios[currentScenario].title}</h2>
+                  <div className="text-6xl mb-6">{scenarios[currentScenario].image}</div>
+                  <p className="text-lg text-slate-700 mb-8 leading-relaxed italic">
+                    {scenarios[currentScenario].context}
+                  </p>
+                  
+                  <div className="grid gap-3">
+                    {scenarios[currentScenario].options.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleOption(opt)}
+                        className="text-left p-4 rounded-xl border-2 border-slate-100 hover:border-slate-900 hover:bg-slate-50 transition-all flex justify-between items-center group"
+                      >
+                        <span className="font-medium text-slate-800">{opt.text}</span>
+                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="animate-in zoom-in-95 duration-300">
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-6 rounded-r-xl">
+                    <div className="flex items-center gap-2 mb-4 text-blue-800">
+                      <Info className="w-5 h-5" />
+                      <h3 className="font-bold">The Weight of Your Choice</h3>
+                    </div>
+                    <p className="text-slate-800 mb-6 leading-relaxed bg-white/50 p-4 rounded-lg italic">
+                      "{history[history.length - 1].thought}"
+                    </p>
+                    <p className="text-slate-700 leading-relaxed font-medium">
+                      {currentInfo}
+                    </p>
+                  </div>
+                  
+                  <button 
+                    onClick={nextScenario}
+                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
+                  >
+                    Continue the Day <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {gameState === 'ending' && (
+            <div className="animate-in fade-in duration-700">
+              <h2 className="text-3xl font-bold mb-6 text-center">Day's End</h2>
+              
+              <div className={`p-6 rounded-2xl border-2 mb-8 ${getEnding().color}`}>
+                <h3 className="text-xl font-black mb-3 uppercase tracking-tight">{getEnding().title}</h3>
+                <p className="leading-relaxed text-lg">
+                  {getEnding().text}
+                </p>
+              </div>
+
+              <div className="mb-8">
+                <h4 className="font-bold text-slate-500 uppercase text-xs mb-4">Journey Log</h4>
+                <div className="space-y-3">
+                  {history.map((item, i) => (
+                    <div key={i} className="flex gap-4 items-start text-sm">
+                      <div className="w-1 h-full bg-slate-200 rounded-full mt-1"></div>
+                      <div>
+                        <span className="font-bold text-slate-400">{item.scenario}:</span>
+                        <p className="text-slate-600">{item.choice}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button 
+                  onClick={restart}
+                  className="flex-1 bg-slate-100 text-slate-800 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
+                >
+                  <RefreshCcw className="w-5 h-5" /> Try Again
+                </button>
+                <div className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                  <MessageCircle className="w-5 h-5" /> Seek Help
+                </div>
+              </div>
+              
+              <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-slate-400 flex-shrink-0" />
+                <p className="text-xs text-slate-500 italic">
+                  Note: This is a narrative educational tool. If you or someone you know is struggling with an eating disorder, please reach out to a professional healthcare provider or local help hotline.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
